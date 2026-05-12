@@ -6752,23 +6752,16 @@ function Update-CumulativeOS {
         Write-Host -ForegroundColor Gray "$($Update.Title) - $(Split-Path $Update.OriginUri -Leaf)"
 
         $TestWindowsPackageCAB = $null
+        $TestWindowsPackageCAB = Test-WindowsPackageCAB -Path $MountDirectory -PackagePath $UpdateLCU
         $GetUpdateLCU = Get-Item $UpdateLCU
         $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
-        if (Test-Path $UpdateLCUMSU) {
-            Write-Verbose -Verbose "Applying LCU using MSU package $UpdateLCUMSU"
-            $UpdateLCU = $UpdateLCUMSU
-        }
-
-        $TestWindowsPackageCAB = Test-WindowsPackageCAB -Path $MountDirectory -PackagePath $UpdateLCU
-	
+ 	
         #=================================================
         #   CombinedMSU
         #   Apply as an MSU package
         #=================================================
-        if ($TestWindowsPackageCAB -eq 'CombinedMSU' -and (Split-Path $UpdateLCU -Extension) -ne '.msu') {
-            # CombinedMSU path when package is CAB: create sidecar MSU and apply as MSU
-            $GetUpdateLCU = Get-Item $UpdateLCU
-            $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
+        if ($TestWindowsPackageCAB -eq 'CombinedMSU') {
+            # CombinedMSU path: prefer existing sidecar MSU, otherwise create one from CAB and apply as MSU
             if (! (Test-Path $UpdateLCUMSU)) {
                 Copy-Item $GetUpdateLCU.FullName $UpdateLCUMSU -Force -ErrorAction Ignore | Out-Null
             }
@@ -6804,7 +6797,7 @@ function Update-CumulativeOS {
             }
             if ($ErrorMessage -match '0x800f0998') {
                 Write-Verbose "OSDBuilder: 0x800f0998 The package may require an SSU installed first" -Verbose
-                throw "OSDBuilder: LCU installation failed with 0x800f0998. Servicing order is invalid for this package. Review $CurrentLog"
+                throw "OSDBuilder: LCU installation failed with 0x800f0998. SSU prerequisite is missing or out of order. Review $CurrentLog"
             }
             if ($ErrorMessage -match '0x800f0823') {
                 throw "OSDBuilder: LCU installation failed with 0x800f0823. Servicing transaction order is invalid. Review $CurrentLog"
