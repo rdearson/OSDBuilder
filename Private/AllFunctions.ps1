@@ -6766,16 +6766,15 @@ function Update-CumulativeOS {
         #   Apply as an MSU package
         #=================================================
         if ($TestWindowsPackageCAB -eq 'CombinedMSU') {
-            if ((Split-Path $UpdateLCU -Leaf) -notmatch '\.msu$') {
-                $GetUpdateLCU = Get-Item $UpdateLCU
-                $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
-                if (! (Test-Path $UpdateLCUMSU)) {
-                    Copy-Item $GetUpdateLCU.FullName $UpdateLCUMSU -Force -ErrorAction Ignore | Out-Null
-                }
-                if (Test-Path $UpdateLCUMSU) {
-                    Write-Verbose -Verbose "Applying Combined LCU as an MSU Package"
-                    $UpdateLCU = $UpdateLCUMSU
-                }
+            # Fallback path for catalogs where only CAB exists: create sidecar MSU and apply that package
+            $GetUpdateLCU = Get-Item $UpdateLCU
+            $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
+            if (! (Test-Path $UpdateLCUMSU)) {
+                Copy-Item $GetUpdateLCU.FullName $UpdateLCUMSU -Force -ErrorAction Ignore | Out-Null
+            }
+            if (Test-Path $UpdateLCUMSU) {
+                Write-Verbose -Verbose "Applying Combined LCU as an MSU Package"
+                $UpdateLCU = $UpdateLCUMSU
             }
         }
         #=================================================
@@ -6802,7 +6801,6 @@ function Update-CumulativeOS {
             $ErrorMessage = $_.Exception.Message
             if ($ErrorMessage -match '0x800f081e') {
                 Write-Verbose "OSDBuilder: 0x800f081e The package is not applicable to this image" -Verbose
-                Continue
             }
             if ($ErrorMessage -match '0x800f0998') {
                 Write-Verbose "OSDBuilder: 0x800f0998 The package may require an SSU installed first" -Verbose
