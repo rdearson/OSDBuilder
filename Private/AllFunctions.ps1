@@ -6766,7 +6766,7 @@ function Update-CumulativeOS {
         #   Apply as an MSU package
         #=================================================
         if ($TestWindowsPackageCAB -eq 'CombinedMSU') {
-            # Fallback path for catalogs where only CAB exists: create sidecar MSU and apply that package
+            # CombinedMSU path: if no sidecar MSU exists yet, create one from CAB and apply as MSU
             $GetUpdateLCU = Get-Item $UpdateLCU
             $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
             if (! (Test-Path $UpdateLCUMSU)) {
