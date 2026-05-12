@@ -6753,8 +6753,6 @@ function Update-CumulativeOS {
 
         $TestWindowsPackageCAB = $null
         $TestWindowsPackageCAB = Test-WindowsPackageCAB -Path $MountDirectory -PackagePath $UpdateLCU
-        $GetUpdateLCU = Get-Item $UpdateLCU
-        $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
  	
         #=================================================
         #   CombinedMSU
@@ -6762,6 +6760,8 @@ function Update-CumulativeOS {
         #=================================================
         if ($TestWindowsPackageCAB -eq 'CombinedMSU') {
             # CombinedMSU path: prefer existing sidecar MSU, otherwise create one from CAB and apply as MSU
+            $GetUpdateLCU = Get-Item $UpdateLCU
+            $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
             if (! (Test-Path $UpdateLCUMSU)) {
                 Copy-Item $GetUpdateLCU.FullName $UpdateLCUMSU -Force -ErrorAction Ignore | Out-Null
             }
