@@ -6797,7 +6797,7 @@ function Update-CumulativeOS {
             }
             if ($ErrorMessage -match '0x800f0998') {
                 Write-Verbose "OSDBuilder: 0x800f0998 The package may require an SSU installed first" -Verbose
-                throw "OSDBuilder: LCU installation failed with 0x800f0998. SSU prerequisite is missing or out of order. Review $CurrentLog"
+                throw "OSDBuilder: LCU installation failed with 0x800f0998. SSU prerequisite may be missing, out of order, or incompatible for this image. Review $CurrentLog"
             }
             if ($ErrorMessage -match '0x800f0823') {
                 throw "OSDBuilder: LCU installation failed with 0x800f0823. Servicing transaction order is invalid. Review $CurrentLog"
