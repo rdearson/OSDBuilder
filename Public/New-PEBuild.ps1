@@ -355,6 +355,9 @@ $MDTUnattendPEx86 = @'
             if ($OSBuild -eq 22000) {$ReleaseId = '21H2'}
             if ($OSBuild -eq 20348) {$ReleaseId = '21H2'}
             if ($OSBuild -eq 22621) {$ReleaseId = '22H2'}
+            if ($OSBuild -eq 22631) {$ReleaseId = '23H2'}
+            if ($OSBuild -eq 26100) {$ReleaseId = '24H2'}
+            if ($OSBuild -eq 26200) {$ReleaseId = '25H2'}
             #=================================================
             Write-Verbose '19.1.1 Set Working Path'
             #=================================================
