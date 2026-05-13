@@ -775,6 +775,14 @@ function New-OSBuild {
                 $OSDUpdateDotNet = $OSDUpdates | Where-Object {$_.UpdateGroup -like "DotNet*"}
             }
             #=================================================
+            #   Deterministic Servicing Plan
+            #=================================================
+            if ($OSMajorVersion -eq 10) {
+                $OSDUpdateSSU = Select-OSDEffectiveUpdates -Updates $OSDUpdateSSU -GroupName 'SSU' -Maximum 1
+                $OSDUpdateLCU = Select-OSDEffectiveUpdates -Updates $OSDUpdateLCU -GroupName 'LCU' -Maximum 1
+                $OSDUpdateDotNet = Select-OSDEffectiveUpdates -Updates $OSDUpdateDotNet -GroupName 'DotNet' -ByFamily
+            }
+            #=================================================
             #   OSDBuilder Seven
             #=================================================
             $OSDUpdateWinSeven = @()

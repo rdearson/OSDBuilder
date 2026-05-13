@@ -6563,6 +6563,52 @@ function Show-WorkingInfoOS {
     Write-Host "-Logs:                      $Info\logs"
     Write-Host '========================================================================================' -ForegroundColor DarkGray
 }
+function Select-OSDEffectiveUpdates {
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [array]$Updates,
+
+        [string]$GroupName = 'Update',
+
+        [int]$Maximum = 0,
+
+        [switch]$ByFamily
+    )
+
+    if ($null -eq $Updates -or @($Updates).Count -eq 0) {Return @()}
+
+    $Candidates = @($Updates | Where-Object {$_})
+    if ($Candidates.Count -eq 0) {Return @()}
+
+    $NonSuperseded = @($Candidates | Where-Object {$_.PSObject.Properties.Name -contains 'IsSuperseded' -and $_.IsSuperseded -eq $false})
+    if ($NonSuperseded.Count -gt 0) {
+        $Candidates = $NonSuperseded
+    }
+
+    if ($ByFamily.IsPresent) {
+        $Resolved = foreach ($Family in ($Candidates | Group-Object -Property UpdateGroup, Category)) {
+            $Family.Group | Sort-Object -Property CreationDate -Descending | Select-Object -First 1
+        }
+        $Resolved = @($Resolved | Sort-Object -Property CreationDate)
+        if ($Resolved.Count -lt $Candidates.Count) {
+            Write-Verbose "Resolved $GroupName to $($Resolved.Count) effective update(s) by family"
+        }
+        Return $Resolved
+    }
+
+    $Resolved = @($Candidates | Sort-Object -Property CreationDate -Descending)
+    if ($Maximum -gt 0) {
+        $Resolved = @($Resolved | Select-Object -First $Maximum)
+    }
+
+    if ($Resolved.Count -lt $Candidates.Count) {
+        Write-Verbose "Resolved $GroupName to $($Resolved.Count) effective update(s)"
+    }
+
+    Return @($Resolved | Sort-Object -Property CreationDate)
+}
 function Update-AdobeOS {
     [CmdletBinding()]
     param (
@@ -6705,20 +6751,15 @@ function Update-CumulativeOS {
         Write-Host -ForegroundColor Cyan "INSTALLING        " -NoNewline
         Write-Host -ForegroundColor Gray "$($Update.Title) - $(Split-Path $Update.OriginUri -Leaf)"
 
-        # Workaround for RPC/DISM error on Win11 22H2
         $TestWindowsPackageCAB = $null
-        if ($OSImageName -like '*Windows 11*' -and $ReleaseID -eq '22H2') {
-            $TestWindowsPackageCAB = 'CombinedMSU'
-        }
-        else {
-            $TestWindowsPackageCAB = Test-WindowsPackageCAB -Path $MountDirectory -PackagePath $UpdateLCU
-        }
-	
+        $TestWindowsPackageCAB = Test-WindowsPackageCAB -Path $MountDirectory -PackagePath $UpdateLCU
+ 	
         #=================================================
         #   CombinedMSU
-        #   This is for Windows 11 need to run as an MSU
+        #   Apply as an MSU package
         #=================================================
         if ($TestWindowsPackageCAB -eq 'CombinedMSU') {
+            # CombinedMSU path: prefer existing sidecar MSU, otherwise create one from CAB and apply as MSU
             $GetUpdateLCU = Get-Item $UpdateLCU
             $UpdateLCUMSU = Join-Path $GetUpdateLCU.Directory ($GetUpdateLCU.BaseName + ".msu")
             if (! (Test-Path $UpdateLCUMSU)) {
@@ -6750,19 +6791,20 @@ function Update-CumulativeOS {
         Write-Verbose "CurrentLog: $CurrentLog"
         Try {Add-WindowsPackage -Path "$MountDirectory" -PackagePath "$UpdateLCU" -LogPath "$CurrentLog" -Verbose | Out-Null}
         Catch {
-            if ($_.Exception.Message -match '0x800f081e') {
+            $ExceptionMessage = $_.Exception.Message
+            if ($ExceptionMessage -match '0x800f081e') {
                 Write-Verbose "OSDBuilder: 0x800f081e The package is not applicable to this image" -Verbose
             }
-            if ($_.Exception.Message -match '0x800f0998') {
+            if ($ExceptionMessage -match '0x800f0998') {
                 Write-Verbose "OSDBuilder: 0x800f0998 The package may require an SSU installed first" -Verbose
+                throw "OSDBuilder: LCU installation failed with 0x800f0998. SSU prerequisite may be missing, out of order, or incompatible for this image. Review $CurrentLog"
             }
-            if ($_.Exception.Message -match '0x8007007b') {
+            if ($ExceptionMessage -match '0x800f0823') {
+                throw "OSDBuilder: LCU installation failed with 0x800f0823. Servicing transaction order is invalid. Review $CurrentLog"
+            }
+            if ($ExceptionMessage -match '0x8007007b') {
                 Write-Verbose "OSDBuilder: 0x8007007b This is a bug that Manel Rodero first spotted, working on it" -Verbose
             }
-<#             elseif ($_.Exception.Message -match '0x800f0823') {
-                Write-Verbose "OSDBuilder: 0x800f0823 Retrying the installation of the LCU.  This is necessary to ensure the SSU is installed properly" -Verbose
-                Add-WindowsPackage -Path "$MountDirectory" -PackagePath "$UpdateLCU" -LogPath "$CurrentLog" | Out-Null
-            } #>
             else {
                 Write-Verbose "OSDBuilder: Review the log for more information" -Verbose
             }

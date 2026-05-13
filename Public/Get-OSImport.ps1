@@ -8,7 +8,7 @@ Returns all Operating Systems in OSDBuilder\OSMedia as a PowerShell Custom Objec
 .LINK
 https://osdbuilder.osdeploy.com/module/functions/get-osmedia
 #>
-function Get-OSMedia {
+function Get-OSImport {
     [CmdletBinding()]
     param (
         #Displays results in GridView with PassThru
@@ -30,7 +30,7 @@ function Get-OSMedia {
         [string]$OSMajorVersion,
 
         #Filter the OSMedia by OS Release Id
-        [ValidateSet ('22H2','21H2','21H1','20H2',2004,1909,1903,1809)]
+        [ValidateSet ('25H2','24H2','23H2','22H2','21H2','21H1','20H2',2004,1909,1903,1809)]
         [string]$OSReleaseId,
         
         #Filter the OSMedia by Image Revision
@@ -179,6 +179,10 @@ function Get-OSMedia {
             if ($RegValueCurrentBuild -eq 19044) {$ReleaseId = '21H2'} #Windows
             if ($RegValueCurrentBuild -eq 22000) {$ReleaseId = '21H2'} #Windows 11
             if ($RegValueCurrentBuild -eq 20348) {$ReleaseId = '21H2'} #Server 2022  
+            if ($RegValueCurrentBuild -eq 22621) {$ReleaseId = '22H2'} #Windows 11
+            if ($RegValueCurrentBuild -eq 22631) {$ReleaseId = '23H2'} #Windows 11
+            if ($RegValueCurrentBuild -eq 26100) {$ReleaseId = '24H2'} #Windows 11
+            if ($RegValueCurrentBuild -eq 26200) {$ReleaseId = '25H2'} #Windows 11
 
             Write-Verbose "ReleaseId: $ReleaseId"
             Write-Verbose "CurrentBuild: $RegValueCurrentBuild"
