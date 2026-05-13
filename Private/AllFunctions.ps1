@@ -6791,18 +6791,18 @@ function Update-CumulativeOS {
         Write-Verbose "CurrentLog: $CurrentLog"
         Try {Add-WindowsPackage -Path "$MountDirectory" -PackagePath "$UpdateLCU" -LogPath "$CurrentLog" -Verbose | Out-Null}
         Catch {
-            $ErrorMessage = $_.Exception.Message
-            if ($ErrorMessage -match '0x800f081e') {
+            $ExceptionMessage = $_.Exception.Message
+            if ($ExceptionMessage -match '0x800f081e') {
                 Write-Verbose "OSDBuilder: 0x800f081e The package is not applicable to this image" -Verbose
             }
-            if ($ErrorMessage -match '0x800f0998') {
+            if ($ExceptionMessage -match '0x800f0998') {
                 Write-Verbose "OSDBuilder: 0x800f0998 The package may require an SSU installed first" -Verbose
                 throw "OSDBuilder: LCU installation failed with 0x800f0998. SSU prerequisite may be missing, out of order, or incompatible for this image. Review $CurrentLog"
             }
-            if ($ErrorMessage -match '0x800f0823') {
+            if ($ExceptionMessage -match '0x800f0823') {
                 throw "OSDBuilder: LCU installation failed with 0x800f0823. Servicing transaction order is invalid. Review $CurrentLog"
             }
-            if ($ErrorMessage -match '0x8007007b') {
+            if ($ExceptionMessage -match '0x8007007b') {
                 Write-Verbose "OSDBuilder: 0x8007007b This is a bug that Manel Rodero first spotted, working on it" -Verbose
             }
             else {
